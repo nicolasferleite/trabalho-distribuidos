@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Farmácia Web</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #007bff; color: white; }
+        .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { opacity: 0.9; }
+        .low-stock { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Gestão de Farmácia</h1>
+        
+        <div class="form-group">
+            <input type="text" id="name" placeholder="Nome do Remédio">
+            <input type="number" id="price" placeholder="Preço (R$)" step="0.01">
+            <input type="number" id="qtd" placeholder="Qtd">
+            <input type="text" id="cat" placeholder="Categoria">
+            <button onclick="addMedicine()">Adicionar</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Preço</th>
+                    <th>Estoque</th>
+                    <th>Categoria</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="medTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API = "http://localhost:8000";
+
+        async function loadData() {
+            const res = await fetch(`${API}/medicines`);
+            const data = await res.json();
+            const tbody = document.getElementById('medTable');
+            tbody.innerHTML = '';
+
+            data.forEach(med => {
+                const row = `<tr>
+                    <td>${med.id}</td>
+                    <td>${med.name}</td>
+                    <td>R$ ${med.price.toFixed(2)}</td>
+                    <td class="${med.quantity < 5 ? 'low-stock' : ''}">${med.quantity}</td>
+                    <td>${med.category}</td>
+                    <td><button style="background:red" onclick="deleteMed(${med.id})">X</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function addMedicine() {
+            const med = {
+                id: 0, // Server decide
+                name: document.getElementById('name').value,
+                price: parseFloat(document.getElementById('price').value),
+                quantity: parseInt(document.getElementById('qtd').value),
+                category: document.getElementById('cat').value
+            };
+
+            await fetch(`${API}/medicines`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(med)
+            });
+            loadData();
+        }
+
+        async function deleteMed(id) {
+            if(confirm("Deletar item?")) {
+                await fetch(`${API}/medicines/${id}`, { method: 'DELETE' });
+                loadData();
+            }
+        }
+
+        setInterval(loadData, 2000); // Auto-atualiza a cada 2s
+        loadData();
+    </script>
+</body>
+</html>
