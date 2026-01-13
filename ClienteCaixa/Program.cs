@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ClienteCaixa;
 
-// 1. MODELO
+// 1. MODELO DE DADOS
 public class Medicine {
     public int id { get; set; }
     public string name { get; set; }
@@ -17,27 +17,28 @@ public class Medicine {
     public string category { get; set; }
 }
 
-// 2. A TELA (FORM)
-public class PharmacyForm : Form { // Note que a classe se chama PharmacyForm
+// 2. A TELA DO CAIXA
+public class PharmacyForm : Form {
     private const string API_URL = "http://localhost:8000";
     private readonly HttpClient client = new HttpClient();
     
+    // Botões e Tabela
     private DataGridView grid;
     private Button btnSell;
     private Button btnRefresh;
     private Label lblStatus;
 
-    // O Construtor tem o MESMO nome da classe
     public PharmacyForm() {
         this.Text = "PDV - Caixa Farmácia";
         this.Size = new Size(650, 500);
         this.StartPosition = FormStartPosition.CenterScreen;
         
-        SetupUI();
-        _ = LoadData();
+        SetupUI();      // Monta a tela
+        _ = LoadData(); // Puxa os dados
     }
 
     private void SetupUI() {
+        // Tabela
         grid = new DataGridView { 
             Location = new Point(10, 10), 
             Size = new Size(610, 350),
@@ -48,6 +49,7 @@ public class PharmacyForm : Form { // Note que a classe se chama PharmacyForm
             AllowUserToAddRows = false
         };
 
+        // Botão Vender
         btnSell = new Button { 
             Text = "VENDER (-1 unid)", 
             Location = new Point(10, 370), 
@@ -57,6 +59,7 @@ public class PharmacyForm : Form { // Note que a classe se chama PharmacyForm
         };
         btnSell.Click += async (s, e) => await SellSelectedItem();
 
+        // Botão Atualizar
         btnRefresh = new Button { 
             Text = "Atualizar Lista", 
             Location = new Point(170, 370), 
@@ -64,6 +67,7 @@ public class PharmacyForm : Form { // Note que a classe se chama PharmacyForm
         };
         btnRefresh.Click += async (s, e) => await LoadData();
 
+        // Status
         lblStatus = new Label { 
             Text = "Conectando...", 
             Location = new Point(10, 420), 
@@ -77,6 +81,7 @@ public class PharmacyForm : Form { // Note que a classe se chama PharmacyForm
         this.Controls.Add(lblStatus);
     }
 
+    // Busca dados do Python
     private async Task LoadData() {
         try {
             var meds = await client.GetFromJsonAsync<List<Medicine>>($"{API_URL}/medicines");
@@ -84,11 +89,12 @@ public class PharmacyForm : Form { // Note que a classe se chama PharmacyForm
             lblStatus.Text = $"Atualizado às: {DateTime.Now.ToLongTimeString()}";
             lblStatus.ForeColor = Color.Green;
         } catch {
-            lblStatus.Text = "ERRO: Servidor Python desligado?";
+            lblStatus.Text = "ERRO: O servidor Python está rodando?";
             lblStatus.ForeColor = Color.Red;
         }
     }
 
+    // Realiza a Venda
     private async Task SellSelectedItem() {
         if (grid.SelectedRows.Count == 0) return;
         var med = (Medicine)grid.SelectedRows[0].DataBoundItem;
@@ -104,14 +110,14 @@ public class PharmacyForm : Form { // Note que a classe se chama PharmacyForm
     }
 }
 
-// 3. O INÍCIO DO PROGRAMA
+// 3. PONTO DE PARTIDA (MAIN)
 static class Program {
     [STAThread]
     static void Main() {
         Application.SetHighDpiMode(HighDpiMode.SystemAware);
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        // Manda rodar o PharmacyForm definido acima
+        // Manda iniciar pela nossa tela
         Application.Run(new PharmacyForm());
     }
 }
